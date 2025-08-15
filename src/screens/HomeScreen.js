@@ -9,50 +9,45 @@ import {
   TextInput,
 } from 'react-native';
 
-// Componente funcional principal da tela
 export default function HomeScreen() {
-  // Estado para armazenar o texto da data de nascimento (ex: "25/12/1990")
   const [birthDateText, setBirthDateText] = useState('');
-  // Estado para armazenar a idade calculada
   const [age, setAge] = useState(null);
+  const [error, setError] = useState('');
 
-  /**
-   * Função para calcular a idade com base na data digitada.
-   */
   const calculateAge = () => {
-    // Verifica se uma data foi digitada
+    setError('');
     if (!birthDateText) {
-      Alert.alert('Atenção', 'Por favor, digite sua data de nascimento.');
+      setError('Por favor, digite sua data de nascimento.');
+      setAge(null);
       return;
     }
 
-    // Valida o formato DD/MM/AAAA
     const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
     const match = birthDateText.match(regex);
     if (!match) {
-      Alert.alert('Erro', 'Digite a data no formato DD/MM/AAAA.');
+      setError('Digite a data no formato DD/MM/AAAA.');
+      setAge(null);
       return;
     }
 
     const day = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10) - 1; // Mês começa do zero no JS
+    const month = parseInt(match[2], 10) - 1;
     const year = parseInt(match[3], 10);
 
     const dob = new Date(year, month, day);
     const today = new Date();
 
-    // Verifica se a data é válida e não está no futuro
     if (
       dob > today ||
       dob.getDate() !== day ||
       dob.getMonth() !== month ||
       dob.getFullYear() !== year
     ) {
-      Alert.alert('Erro', 'Data inválida.');
+      setError('Data inválida.');
+      setAge(null);
       return;
     }
 
-    // Calcula a idade
     let calculatedAge = today.getFullYear() - dob.getFullYear();
     const monthDifference = today.getMonth() - dob.getMonth();
 
@@ -64,6 +59,7 @@ export default function HomeScreen() {
     }
 
     setAge(calculatedAge);
+    setError('');
   };
 
   return (
@@ -73,24 +69,26 @@ export default function HomeScreen() {
         Digite sua data de nascimento para descobrir sua idade.
       </Text>
 
-      {/* Campo de texto para digitar a data */}
-      <TextInput
-        style={styles.input}
-        placeholder="DD/MM/AAAA"
-        placeholderTextColor="#888"
-        value={birthDateText}
-        onChangeText={setBirthDateText}
-        keyboardType="numeric"
-        maxLength={10}
-      />
+      {/* Label com campo de texto embutido */}
+      <View style={styles.inlineLabel}>
+        <Text style={styles.label}>Data de nascimento: </Text>
+        <TextInput
+          style={styles.inputInline}
+          placeholder="DD/MM/AAAA"
+          placeholderTextColor="#888"
+          value={birthDateText}
+          onChangeText={setBirthDateText}
+          keyboardType="numeric"
+          maxLength={10}
+        />
+      </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      {/* Botão para acionar o cálculo */}
       <TouchableOpacity style={styles.button} onPress={calculateAge}>
         <Text style={styles.buttonText}>Calcular Idade</Text>
       </TouchableOpacity>
 
-      {/* Exibe o resultado do cálculo */}
-      {age !== null && (
+      {age !== null && !error && (
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>Você tem</Text>
           <Text style={styles.ageText}>{age} anos</Text>
@@ -100,7 +98,6 @@ export default function HomeScreen() {
   );
 }
 
-// Folha de estilos para o componente
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -121,17 +118,33 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
-  input: {
+  inlineLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
     width: '100%',
-    height: 50,
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: '#333333',
-    marginBottom: 20,
+  },
+  label: {
     color: '#FFFFFF',
     fontSize: 18,
+  },
+  inputInline: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#333333',
+    color: '#FFFFFF',
+    fontSize: 18,
+  },
+  errorText: {
+    color: '#FF5252',
+    fontSize: 15,
+    marginBottom: 10,
+    marginTop: 2,
+    alignSelf: 'flex-start',
   },
   button: {
     width: '100%',
@@ -145,6 +158,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    marginTop: 10,
   },
   buttonText: {
     color: '#FFFFFF',
