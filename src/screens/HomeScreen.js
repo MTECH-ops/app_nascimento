@@ -5,78 +5,64 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Platform,
   SafeAreaView,
+  TextInput,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 // Componente funcional principal da tela
 export default function HomeScreen() {
-  // Estado para armazenar o objeto da data de nascimento
-  const [date, setDate] = useState(new Date());
-  // Estado para controlar a visibilidade do seletor de data
-  const [showPicker, setShowPicker] = useState(false);
   // Estado para armazenar o texto da data de nascimento (ex: "25/12/1990")
   const [birthDateText, setBirthDateText] = useState('');
   // Estado para armazenar a idade calculada
   const [age, setAge] = useState(null);
 
   /**
-   * Mostra ou esconde o seletor de data.
-   */
-  const toggleDatePicker = () => {
-    setShowPicker(!showPicker);
-  };
-
-  /**
-   * É chamada quando o usuário seleciona uma data no picker.
-   * @param {object} event - O evento do seletor.
-   * @param {Date} selectedDate - A data que foi selecionada.
-   */
-  const onChangeDate = ({ type }, selectedDate) => {
-    // No Android, o picker é fechado manualmente
-    if (Platform.OS === 'android') {
-      toggleDatePicker();
-    }
-    // Se o usuário confirmou a seleção ('set')
-    if (type === 'set') {
-      const currentDate = selectedDate || date;
-      setDate(currentDate);
-      // Formata a data para o padrão brasileiro para exibição
-      setBirthDateText(currentDate.toLocaleDateString('pt-BR'));
-      setAge(null); // Limpa a idade anterior ao selecionar nova data
-    }
-  };
-
-  /**
-   * Função para calcular a idade com base na data selecionada.
+   * Função para calcular a idade com base na data digitada.
    */
   const calculateAge = () => {
-    // Verifica se uma data foi selecionada
+    // Verifica se uma data foi digitada
     if (!birthDateText) {
-      Alert.alert('Atenção', 'Por favor, selecione uma data de nascimento primeiro.');
+      Alert.alert('Atenção', 'Por favor, digite sua data de nascimento.');
       return;
     }
 
-    const today = new Date();
-    const dob = new Date(date);
+    // Valida o formato DD/MM/AAAA
+    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = birthDateText.match(regex);
+    if (!match) {
+      Alert.alert('Erro', 'Digite a data no formato DD/MM/AAAA.');
+      return;
+    }
 
-    // Verifica se a data de nascimento não está no futuro
-    if (dob > today) {
-        Alert.alert('Erro', 'A data de nascimento não pode ser no futuro.');
-        return;
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1; // Mês começa do zero no JS
+    const year = parseInt(match[3], 10);
+
+    const dob = new Date(year, month, day);
+    const today = new Date();
+
+    // Verifica se a data é válida e não está no futuro
+    if (
+      dob > today ||
+      dob.getDate() !== day ||
+      dob.getMonth() !== month ||
+      dob.getFullYear() !== year
+    ) {
+      Alert.alert('Erro', 'Data inválida.');
+      return;
     }
 
     // Calcula a idade
     let calculatedAge = today.getFullYear() - dob.getFullYear();
     const monthDifference = today.getMonth() - dob.getMonth();
 
-    // Ajusta a idade se o aniversário deste ano ainda não ocorreu
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 && today.getDate() < dob.getDate())
+    ) {
       calculatedAge--;
     }
 
-    // Define a idade no estado
     setAge(calculatedAge);
   };
 
@@ -84,24 +70,19 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Calculadora de Idade</Text>
       <Text style={styles.subtitle}>
-        Selecione sua data de nascimento para descobrir sua idade.
+        Digite sua data de nascimento para descobrir sua idade.
       </Text>
 
-      {/* O seletor de data só é exibido quando showPicker for true */}
-      {showPicker && (
-        <DateTimePicker
-          mode="date"
-          display="spinner"
-          value={date}
-          onChange={onChangeDate}
-          maximumDate={new Date()} // Impede selecionar datas futuras
-        />
-      )}
-
-      {/* Botão que parece um input para abrir o seletor de data */}
-      <TouchableOpacity style={styles.inputButton} onPress={toggleDatePicker}>
-        <Text style={styles.inputText}>{birthDateText || 'DD/MM/AAAA'}</Text>
-      </TouchableOpacity>
+      {/* Campo de texto para digitar a data */}
+      <TextInput
+        style={styles.input}
+        placeholder="DD/MM/AAAA"
+        placeholderTextColor="#888"
+        value={birthDateText}
+        onChangeText={setBirthDateText}
+        keyboardType="numeric"
+        maxLength={10}
+      />
 
       {/* Botão para acionar o cálculo */}
       <TouchableOpacity style={styles.button} onPress={calculateAge}>
@@ -140,7 +121,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
-  inputButton: {
+  input: {
     width: '100%',
     height: 50,
     backgroundColor: '#1E1E1E',
@@ -149,12 +130,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333333',
     marginBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  inputText: {
-    fontSize: 18,
     color: '#FFFFFF',
+    fontSize: 18,
   },
   button: {
     width: '100%',
